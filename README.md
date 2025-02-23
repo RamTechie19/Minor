@@ -6,7 +6,7 @@ This project implements a steganography technique based on **P-ADPVD** (Pixel Ad
 
 ### 1. Encoding (Hiding a message)
 - Converts the input message into **binary format**.
-- Identifies **Points of Interest (POI)** in the image using **HOG feature extraction**.
+- Identifies **Points of Interest (POI)** in the image using **HOG feature extraction** and **Threshold Computation** .
 - Embeds the message into **specific pixel pairs** 
 - Saves the **stego image** containing the hidden message.
 
