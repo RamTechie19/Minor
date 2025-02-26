@@ -2,21 +2,42 @@ import numpy as np
 import cv2
 
 # Histogram of Oriented Gradients (HOG) to identify texture-rich regions
-def compute_HOG(image_array):
+def compute_HOG(image_array, debug=False):
     gray = cv2.cvtColor(image_array, cv2.COLOR_RGB2GRAY)
     hog = cv2.HOGDescriptor()
     hog_features = hog.compute(gray).flatten()
     hog_features = (hog_features - np.min(hog_features)) / (np.max(hog_features) - np.min(hog_features))
+    
+    if debug:
+        print(f"HOG Features shape: {hog_features.shape}")
+        print(f"HOG Features range: {np.min(hog_features)} to {np.max(hog_features)}")
+        print(f"HOG Features mean: {np.mean(hog_features)}")
+        print(f"HOG Features first 10 values: {hog_features[:10]}")
+    
     return hog_features
 
 # adaptive threshold for POI selection
-def compute_threshold(hog_features):
-    return np.mean(hog_features) * 0.8
+def compute_threshold(hog_features, debug=False):
+    threshold = np.mean(hog_features) * 0.8
+    
+    if debug:
+        print(f"Computed threshold: {threshold}")
+        print(f"HOG mean: {np.mean(hog_features)}")
+        print(f"HOG values above threshold: {np.sum(hog_features > threshold)}/{len(hog_features)}")
+    
+    return threshold
 
 # Points of Interest (POI) where data can be hidden effectively
-def identify_POI(hog_features, threshold):
+def identify_POI(hog_features, threshold, debug=False):
     poi_indices = np.where(hog_features > threshold)[0]
-    return poi_indices[::2]
+    selected_indices = poi_indices[::2]  # Take every other POI
+    
+    if debug:
+        print(f"Total POI found: {len(poi_indices)}")
+        print(f"Selected POI: {len(selected_indices)}")
+        print(f"First 10 POI values: {[hog_features[i] for i in selected_indices[:10]]}")
+    
+    return selected_indices
 
 # difference between two pixel values 
 def pixel_difference(pixel1, pixel2):

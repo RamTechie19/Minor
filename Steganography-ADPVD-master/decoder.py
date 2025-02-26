@@ -22,9 +22,9 @@ def decode_image(stego_image, debug=False):
         height, width, _ = stego_array.shape
 
         # Compute HOG and identify POI - must match encoding process
-        hog_features = compute_HOG(stego_array)
-        threshold = compute_threshold(hog_features)
-        poi_indices = identify_POI(hog_features, threshold)
+        hog_features = compute_HOG(stego_array, debug)
+        threshold = compute_threshold(hog_features, debug)
+        poi_indices = identify_POI(hog_features, threshold, debug)
 
         if len(poi_indices) == 0:
             raise ValueError("No POI indices found. Decoding failed.")
@@ -74,6 +74,8 @@ def decode_image(stego_image, debug=False):
                 if terminator_found:
                     break
 
+        print(f"Total pixels used for extraction: {len(extracted_locations)}")
+        print(f"Total bits extracted: {len(extracted_bits)}")
         
         if debug:
             print(f"Total extracted bits: {len(extracted_bits)}")

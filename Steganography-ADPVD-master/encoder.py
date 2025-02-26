@@ -20,9 +20,9 @@ def encode_image(cover_image, message, debug=False):
         total_bits = len(binary_message)
 
         # Compute HOG and identify POI
-        hog_features = compute_HOG(cover_array)
-        threshold = compute_threshold(hog_features)
-        poi_indices = identify_POI(hog_features, threshold)
+        hog_features = compute_HOG(cover_array, debug)
+        threshold = compute_threshold(hog_features, debug)
+        poi_indices = identify_POI(hog_features, threshold, debug)
 
         if len(poi_indices) == 0:
             raise ValueError("No suitable points of interest found in the image")
@@ -67,6 +67,9 @@ def encode_image(cover_image, message, debug=False):
             
             # Update bit position
             bit_position += len(bits_to_embed)
+        
+        print(f"Total pixels used for embedding: {len(embedded_locations)}")
+        print(f"Total bits embedded: {bit_position}")
             
         if bit_position < total_bits:
             raise ValueError(f"Image capacity insufficient. Embedded {bit_position}/{total_bits} bits")
