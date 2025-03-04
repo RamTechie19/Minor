@@ -1,12 +1,11 @@
 import argparse
 from PIL import Image
 import numpy as np
-from encoder import encode_image
-from decoder import decode_image
+from utils import encode_image, decode_image
 
 def main():
     try:
-        parser = argparse.ArgumentParser(description="Steganography using P-ADPVD technique")
+        parser = argparse.ArgumentParser(description="Steganography using ADPVD technique")
         parser.add_argument("action", choices=["encode", "decode"], help="Action to perform")
         parser.add_argument("input_image", help="Path to the input image")
         parser.add_argument("--message", help="Message to encode (required for encoding)")
@@ -21,36 +20,51 @@ def main():
 
             # Load and encoding of the message into the image
             cover_image = Image.open(args.input_image)
-            stego_image = encode_image(cover_image, args.message)
+            stego_image = encode_image(cover_image, args.message, args.debug)
 
-            # Debug information
+            # Debug information for more details 
             if args.debug:
                 cover_array = np.array(cover_image.convert("RGB"))
                 stego_array = np.array(stego_image.convert("RGB"))
-                print(f"Before saving (first 5 pixels): {cover_array[:1, :5]}")
+                print(f"Before encoding (first 5 pixels): {cover_array[:1, :5]}")
                 print(f"After encoding (first 5 pixels): {stego_array[:1, :5]}")
                 
-                # Calculating and printing the pixel value differences 
+                # Calculate and print the pixel value differences 
                 diff_count = np.sum(cover_array != stego_array)
                 print(f"Total pixel value changes: {diff_count}")
                 
                 # Compare original message with decoding
-                test_decoded = decode_image(stego_image)
+                print("Verifying message before saving...")
+                test_decoded = decode_image(stego_image, args.debug)
                 print(f"Test decode before saving: '{test_decoded}'")
                 print(f"Original message: '{args.message}'")
                 if test_decoded == args.message:
                     print("✓ Messages match before saving")
                 else:
                     print("✗ Messages do not match before saving")
+                    
+                    
+                    print("\nDebug information for message mismatch:")
+                    print(f"Original message length: {len(args.message)}")
+                    print(f"Decoded message length: {len(test_decoded)}")
+                    min_len = min(len(args.message), len(test_decoded))
+                    for i in range(min_len):
+                        orig = args.message[i]
+                        decoded = test_decoded[i]
+                        if orig != decoded:
+                            print(f"Mismatch at position {i}: '{orig}' vs '{decoded}'")
+                            print(f"  Original char code: {ord(orig)} ({format(ord(orig), '08b')})")
+                            print(f"  Decoded char code: {ord(decoded)} ({format(ord(decoded), '08b')})")
 
             # Saving the image
             stego_image.save(args.output, format='PNG')
-            saved_image = Image.open(args.output)
+            print(f"Message encoded successfully. Stego image saved as {args.output}")
             
             # Verifying the saved image
             if args.debug:
+                saved_image = Image.open(args.output)
                 saved_array = np.array(saved_image.convert("RGB"))
-                print(f"After saving (first 5 pixels): {saved_array[:1, :5]}")
+                print(f"\nAfter saving (first 5 pixels): {saved_array[:1, :5]}")
                 
                 if np.array_equal(stego_array, saved_array):
                     print("✓ Saved image matches stego image")
@@ -60,20 +74,32 @@ def main():
                     print(f"Saving introduced {diff_count} differences")
                 
                 # Test decode after saving
-                saved_decoded = decode_image(saved_image)
+                print("\nVerifying message after saving...")
+                saved_decoded = decode_image(saved_image, args.debug)
                 print(f"Test decode after saving: '{saved_decoded}'")
                 if saved_decoded == args.message:
                     print("✓ Messages match after saving")
                 else:
                     print("✗ Messages do not match after saving")
-
-            print(f"Message encoded successfully. Stego image saved as {args.output}")
+                    
+                    
+                    print("\nDebug information for message mismatch after saving:")
+                    print(f"Original message length: {len(args.message)}")
+                    print(f"Decoded message length: {len(saved_decoded)}")
+                    min_len = min(len(args.message), len(saved_decoded))
+                    for i in range(min_len):
+                        orig = args.message[i]
+                        decoded = saved_decoded[i]
+                        if orig != decoded:
+                            print(f"Mismatch at position {i}: '{orig}' vs '{decoded}'")
+                            print(f"  Original char code: {ord(orig)} ({format(ord(orig), '08b')})")
+                            print(f"  Decoded char code: {ord(decoded)} ({format(ord(decoded), '08b')})")
 
         elif args.action == "decode":
             
             # Load and decoding of the image for message 
             stego_image = Image.open(args.input_image)
-            message = decode_image(stego_image)
+            message = decode_image(stego_image, args.debug)
             print(f"Decoded message: '{message}'")
 
     except Exception as e:

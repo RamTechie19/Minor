@@ -6,18 +6,7 @@ from utils import (
 )
 
 def decode_image(stego_image, debug=False):
-    """
-    Decode a message from a stego image using LSB extraction at HOG-identified positions.
-    
-    Args:
-        stego_image (PIL.Image): The stego image containing the hidden message
-        debug (bool): Whether to print debug information
-        
-    Returns:
-        str: The decoded message
-    """
     try:
-        # Convert image to numpy array
         stego_array = np.array(stego_image.convert("RGB"))
         height, width, _ = stego_array.shape
 
@@ -36,10 +25,10 @@ def decode_image(stego_image, debug=False):
         terminator_found = False
         extracted_locations = []
         
+        decoding_display_count = 0
+        
         for idx, poi in enumerate(poi_indices):
             row, col = divmod(poi, width)
-            
-            # Ensure we don't wrap around to next row
             if col + 1 >= width:
                 continue
                 
@@ -50,17 +39,15 @@ def decode_image(stego_image, debug=False):
                 print(f"Extracting at ({row},{col})")
                 print(f"From pixels: {pixel1}, {pixel2}")
             
-            # Extract 2 bits from this POI
-            bits = extract_bits(pixel1, pixel2)
+            bits = extract_bits(pixel1, pixel2, debug)
+            if decoding_display_count < 20:
+                print(f"Decoding at ({row},{col}): {pixel1}, {pixel2} | Capacity: {len(bits)}")
+                print(f"Decoding at ({row},{col}): {pixel1}, {pixel2} | Extracted: {bits}")
+                decoding_display_count += 1
+                
             extracted_bits += bits
             
-            print(f"Decoding at ({row},{col}): {pixel1}, {pixel2} | Capacity: {len(bits)}")
-            
-            # Track extraction location
             extracted_locations.append((row, col))
-            
-            if debug:
-                print(f"Extracted bits: {bits}")
             
             # Check for null terminator every 8 bits
             if len(extracted_bits) >= 8:
@@ -77,10 +64,9 @@ def decode_image(stego_image, debug=False):
         print(f"Total pixels used for extraction: {len(extracted_locations)}")
         print(f"Total bits extracted: {len(extracted_bits)}")
         
-        if debug:
-            print(f"Total extracted bits: {len(extracted_bits)}")
-            print(f"First 10 extraction locations: {extracted_locations[:10]}")
-
+        # Always print the binary message, not just in debug mode
+        print(f"Binary message: {extracted_bits}")
+        
         # Convert binary to text with validation
         message = ""
         for i in range(0, len(extracted_bits), 8):
@@ -88,18 +74,15 @@ def decode_image(stego_image, debug=False):
                 try:
                     char_bits = extracted_bits[i:i+8]
                     char_val = int(char_bits, 2)
-                    if 32 <= char_val <= 126:  # Printable ASCII range
+                    if 32 <= char_val <= 126:  
                         message += chr(char_val)
                     elif debug:
-                        print(f"Skipping non-printable character: {char_val}")
+                        print(f"Skipping non-printable character: {char_val} from bits {char_bits}")
                 except ValueError as e:
                     if debug:
                         print(f"Error converting bits to character: {e}")
                     continue
-        print(f"Binary message: {extracted_bits}")
-        if debug:
-            print(f"Decoded message: '{message}'")
-
+        
         return message
 
     except Exception as e:

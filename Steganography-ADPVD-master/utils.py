@@ -16,7 +16,7 @@ def compute_HOG(image_array, debug=False):
     
     return hog_features
 
-# adaptive threshold for POI selection
+# Adaptive threshold for POI selection
 def compute_threshold(hog_features, debug=False):
     threshold = np.mean(hog_features) * 0.8
     
@@ -39,100 +39,69 @@ def identify_POI(hog_features, threshold, debug=False):
     
     return selected_indices
 
-# difference between two pixel values 
-def pixel_difference(pixel1, pixel2):
-    return int(pixel1[0]) - int(pixel2[0])
-
-# bits can be hidden
-def get_embedding_capacity(diff):
-    abs_diff = abs(diff)
-    if abs_diff < 8:
-        return 2
-    elif abs_diff < 16:
-        return 3
-    elif abs_diff < 32:
-        return 4
-    elif abs_diff < 64:
-        return 5
-    else:
-        return 6
-
-# Embedding bits
-def embed_bits(pixel1, pixel2, bits):
-    if len(bits) == 0:
-        return pixel1.copy(), pixel2.copy()
-        
+# Simple LSB embedding in all three channels
+def embed_bits(pixel1, pixel2, bits_to_embed, debug=False):
+    """
+    Embed bits into the LSB of all 3 channels of both pixels.
+    This provides up to 6 bits of capacity per pixel pair.
+    """
     new_pixel1 = pixel1.copy()
     new_pixel2 = pixel2.copy()
     
-    if len(bits) > 0:
-        new_pixel1[0] = (new_pixel1[0] & 0xFE) | int(bits[0])
+    if len(bits_to_embed) == 0:
+        return new_pixel1, new_pixel2
+    
+    # Track bits embedded
+    bits_embedded = 0
+    
+    # Embed in all three RGB channels, one bit per channel
+    for channel in range(3):
+        if bits_embedded < len(bits_to_embed):
+            # Modify LSB of pixel1's current channel
+            new_pixel1[channel] = (pixel1[channel] & 0xFE) | int(bits_to_embed[bits_embedded])
+            bits_embedded += 1
             
-    if len(bits) > 1:
-        new_pixel2[0] = (new_pixel2[0] & 0xFE) | int(bits[1])
+            if debug:
+                print(f"Embed in P1[{channel}]: {bits_to_embed[bits_embedded-1]}, " 
+                      f"Before: {pixel1[channel]}, After: {new_pixel1[channel]}")
+        
+        if bits_embedded < len(bits_to_embed):
+            # Modify LSB of pixel2's current channel
+            new_pixel2[channel] = (pixel2[channel] & 0xFE) | int(bits_to_embed[bits_embedded])
+            bits_embedded += 1
             
+            if debug:
+                print(f"Embed in P2[{channel}]: {bits_to_embed[bits_embedded-1]}, "
+                    f"Before: {pixel2[channel]}, After: {new_pixel2[channel]}")
+    
     return new_pixel1, new_pixel2
 
-# Extracting bits
-def extract_bits(pixel1, pixel2):
-    extracted = []
+# Extract bits from all three channels
+def extract_bits(pixel1, pixel2, debug=False):
+    """
+    Extract bits from the LSB of all 3 channels of both pixels.
+    This extracts up to 6 bits per pixel pair.
+    """
+    extracted = ""
     
-    bit1 = pixel1[0] & 0x01
-    extracted.append(str(bit1))
-    
-    bit2 = pixel2[0] & 0x01
-    extracted.append(str(bit2))
-    
-    return ''.join(extracted)
-
-
-def decode_image(stego_image):
-    try:
-        stego_array = np.array(stego_image.convert("RGB"))
-        height, width, _ = stego_array.shape
-
-        hog_features = compute_HOG(stego_array)
-        threshold = compute_threshold(hog_features)
-        poi_indices = identify_POI(hog_features, threshold)
-
-        if len(poi_indices) == 0:
-            raise ValueError("No POI indices found. Decoding failed.")
-
-        extracted_bits = ""
-        terminator_found = False
+    # Extract from all three RGB channels
+    for channel in range(3):
+        # Extract LSB from pixel1's current channel
+        bit1 = pixel1[channel] & 0x01
+        extracted += str(bit1)
         
-        for idx, poi in enumerate(poi_indices):
-            row, col = divmod(poi, width)
-            pixel1 = stego_array[row, col]
-            pixel2 = stego_array[row, (col+1) % width]
-            
-            bits = extract_bits(pixel1, pixel2)
-            extracted_bits += bits
-            
-            if len(extracted_bits) >= 8:
-                for i in range(0, len(extracted_bits) - 7, 8):
-                    chunk = extracted_bits[i:i+8]
-                    if chunk == "00000000":
-                        extracted_bits = extracted_bits[:i]
-                        terminator_found = True
-                        break
-                
-                if terminator_found:
-                    break
+        if debug:
+            print(f"Extract from P1[{channel}]: {bit1}")
+        
+        # Extract LSB from pixel2's current channel
+        bit2 = pixel2[channel] & 0x01
+        extracted += str(bit2)
+        
+        if debug:
+            print(f"Extract from P2[{channel}]: {bit2}")
+    
+    return extracted
 
-        # Convert binary to text with validation
-        message = ""
-        for i in range(0, len(extracted_bits), 8):
-            if i + 8 <= len(extracted_bits):
-                try:
-                    char_bits = extracted_bits[i:i+8]
-                    char_val = int(char_bits, 2)
-                    if 32 <= char_val <= 126:  # Printable ASCII range
-                        message += chr(char_val)
-                except ValueError:
-                    continue
-
-        return message
-
-    except Exception as e:
-        raise Exception(f"Decoding failed: {str(e)}")
+# Import the encode_image and decode_image functions from adpvd.py
+from adpvd import encode_image_adpvd as encode_image
+from adpvd import decode_image_adpvd as decode_image

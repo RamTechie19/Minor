@@ -7,7 +7,6 @@ from utils import (
 
 def encode_image(cover_image, message, debug=False):
     try:
-        # Converting image to numpy array
         cover_array = np.array(cover_image.convert("RGB"))
         height, width, _ = cover_array.shape
 
@@ -15,7 +14,6 @@ def encode_image(cover_image, message, debug=False):
         binary_message = ''.join(format(ord(c), '08b') for c in message) + '00000000'
         print(f"Binary message: {binary_message}")
         
-        # Track current position in binary message
         bit_position = 0
         total_bits = len(binary_message)
 
@@ -32,6 +30,8 @@ def encode_image(cover_image, message, debug=False):
         # Creating a copy for embedding
         stego_array = np.copy(cover_array)
         
+        encoding_display_count = 0
+        
         # Embedding the message bits
         embedded_locations = []
         for idx, poi in enumerate(poi_indices):
@@ -40,33 +40,38 @@ def encode_image(cover_image, message, debug=False):
                 
             row, col = divmod(poi, width)
             
+            # Ensure we don't go out of bounds
             if col + 1 >= width:
                 continue
                 
             pixel1 = stego_array[row, col].copy()
             pixel2 = stego_array[row, col + 1].copy()
             
-            bits_to_embed = binary_message[bit_position:bit_position+2]
-            if not bits_to_embed:  
-                break
-                
-            print(f"Encoding at ({row},{col}): {pixel1}, {pixel2} | Capacity: {len(bits_to_embed)}")
+            remaining_bits = total_bits - bit_position
+            bits_count = min(6, remaining_bits)
+            bits_to_embed = binary_message[bit_position:bit_position+bits_count]
             
-            # Embed bits
-            new_pixel1, new_pixel2 = embed_bits(pixel1, pixel2, bits_to_embed)
+            if encoding_display_count < 20:
+                print(f"Encoding at ({row},{col}): {pixel1}, {pixel2} | Capacity: {bits_count}")
+                encoding_display_count += 1
+            
+            if debug:
+                print(f"At ({row},{col}): Embedding {bits_count} bits: {bits_to_embed}")
+                print(f"Original pixels: {pixel1}, {pixel2}")
+            
+            new_pixel1, new_pixel2 = embed_bits(pixel1, pixel2, bits_to_embed, debug)
             
             if debug:
                 print(f"Modified pixels: {new_pixel1}, {new_pixel2}")
             
-            
             stego_array[row, col] = new_pixel1
             stego_array[row, col + 1] = new_pixel2
             
-            # Track embedding location
             embedded_locations.append((row, col))
+            bit_position += bits_count
             
-            # Update bit position
-            bit_position += len(bits_to_embed)
+            if encoding_display_count <= 20:
+                print(f"Encoding at ({row},{col}): {pixel1} → {new_pixel1}, {pixel2} → {new_pixel2} | Embedded: {bits_to_embed}")
         
         print(f"Total pixels used for embedding: {len(embedded_locations)}")
         print(f"Total bits embedded: {bit_position}")
@@ -76,7 +81,6 @@ def encode_image(cover_image, message, debug=False):
 
         if debug:
             print(f"Message embedded successfully")
-            print(f"Used {len(embedded_locations)} pixel pairs")
             print(f"First 10 embedding locations: {embedded_locations[:10]}")
             
         return Image.fromarray(stego_array.astype('uint8'))
