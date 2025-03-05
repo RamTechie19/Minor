@@ -18,22 +18,18 @@ def main():
             if not args.message or not args.output:
                 parser.error("Encoding requires --message and --output arguments")
 
-            # Load and encoding of the message into the image
             cover_image = Image.open(args.input_image)
             stego_image = encode_image(cover_image, args.message, args.debug)
 
-            # Debug information for more details 
             if args.debug:
                 cover_array = np.array(cover_image.convert("RGB"))
                 stego_array = np.array(stego_image.convert("RGB"))
                 print(f"Before encoding (first 5 pixels): {cover_array[:1, :5]}")
                 print(f"After encoding (first 5 pixels): {stego_array[:1, :5]}")
                 
-                # Calculate and print the pixel value differences 
                 diff_count = np.sum(cover_array != stego_array)
                 print(f"Total pixel value changes: {diff_count}")
                 
-                # Compare original message with decoding
                 print("Verifying message before saving...")
                 test_decoded = decode_image(stego_image, args.debug)
                 print(f"Test decode before saving: '{test_decoded}'")
@@ -42,8 +38,6 @@ def main():
                     print("✓ Messages match before saving")
                 else:
                     print("✗ Messages do not match before saving")
-                    
-                    
                     print("\nDebug information for message mismatch:")
                     print(f"Original message length: {len(args.message)}")
                     print(f"Decoded message length: {len(test_decoded)}")
@@ -56,11 +50,9 @@ def main():
                             print(f"  Original char code: {ord(orig)} ({format(ord(orig), '08b')})")
                             print(f"  Decoded char code: {ord(decoded)} ({format(ord(decoded), '08b')})")
 
-            # Saving the image
             stego_image.save(args.output, format='PNG')
             print(f"Message encoded successfully. Stego image saved as {args.output}")
             
-            # Verifying the saved image
             if args.debug:
                 saved_image = Image.open(args.output)
                 saved_array = np.array(saved_image.convert("RGB"))
@@ -73,7 +65,6 @@ def main():
                     diff_count = np.sum(stego_array != saved_array)
                     print(f"Saving introduced {diff_count} differences")
                 
-                # Test decode after saving
                 print("\nVerifying message after saving...")
                 saved_decoded = decode_image(saved_image, args.debug)
                 print(f"Test decode after saving: '{saved_decoded}'")
@@ -81,8 +72,6 @@ def main():
                     print("✓ Messages match after saving")
                 else:
                     print("✗ Messages do not match after saving")
-                    
-                    
                     print("\nDebug information for message mismatch after saving:")
                     print(f"Original message length: {len(args.message)}")
                     print(f"Decoded message length: {len(saved_decoded)}")
@@ -96,8 +85,6 @@ def main():
                             print(f"  Decoded char code: {ord(decoded)} ({format(ord(decoded), '08b')})")
 
         elif args.action == "decode":
-            
-            # Load and decoding of the image for message 
             stego_image = Image.open(args.input_image)
             message = decode_image(stego_image, args.debug)
             print(f"Decoded message: '{message}'")

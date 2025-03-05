@@ -1,3 +1,4 @@
+#Decode_image.py
 import numpy as np
 from PIL import Image
 from utils import (
@@ -10,7 +11,6 @@ def decode_image(stego_image, debug=False):
         stego_array = np.array(stego_image.convert("RGB"))
         height, width, _ = stego_array.shape
 
-        # Compute HOG and identify POI - must match encoding process
         hog_features = compute_HOG(stego_array, debug)
         threshold = compute_threshold(hog_features, debug)
         poi_indices = identify_POI(hog_features, threshold, debug)
@@ -20,7 +20,6 @@ def decode_image(stego_image, debug=False):
 
         print(f"Decoding POI indices: {poi_indices[:10]}")
         
-        # Extract bits
         extracted_bits = ""
         terminator_found = False
         extracted_locations = []
@@ -40,7 +39,7 @@ def decode_image(stego_image, debug=False):
                 print(f"From pixels: {pixel1}, {pixel2}")
             
             bits = extract_bits(pixel1, pixel2, debug)
-            if decoding_display_count < 20:
+            if decoding_display_count< 20:
                 print(f"Decoding at ({row},{col}): {pixel1}, {pixel2} | Capacity: {len(bits)}")
                 print(f"Decoding at ({row},{col}): {pixel1}, {pixel2} | Extracted: {bits}")
                 decoding_display_count += 1
@@ -49,7 +48,6 @@ def decode_image(stego_image, debug=False):
             
             extracted_locations.append((row, col))
             
-            # Check for null terminator every 8 bits
             if len(extracted_bits) >= 8:
                 for i in range(0, len(extracted_bits) - 7, 8):
                     chunk = extracted_bits[i:i+8]
@@ -64,17 +62,15 @@ def decode_image(stego_image, debug=False):
         print(f"Total pixels used for extraction: {len(extracted_locations)}")
         print(f"Total bits extracted: {len(extracted_bits)}")
         
-        # Always print the binary message, not just in debug mode
         print(f"Binary message: {extracted_bits}")
         
-        # Convert binary to text with validation
         message = ""
         for i in range(0, len(extracted_bits), 8):
             if i + 8 <= len(extracted_bits):
                 try:
                     char_bits = extracted_bits[i:i+8]
                     char_val = int(char_bits, 2)
-                    if 32 <= char_val <= 126:  
+                    if 32 <= char_val<= 126:  
                         message += chr(char_val)
                     elif debug:
                         print(f"Skipping non-printable character: {char_val} from bits {char_bits}")
