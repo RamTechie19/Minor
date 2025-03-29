@@ -50,7 +50,7 @@ def main():
                             print(f"  Original char code: {ord(orig)} ({format(ord(orig), '08b')})")
                             print(f"  Decoded char code: {ord(decoded)} ({format(ord(decoded), '08b')})")
 
-            stego_image.save(args.output, format='PNG')
+            stego_image.save(args.output, format='TIFF')
             print(f"Message encoded successfully. Stego image saved as {args.output}")
             
             if args.debug:
