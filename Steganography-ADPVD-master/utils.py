@@ -37,7 +37,7 @@ def compute_threshold(hog_features, debug=False):
     if debug:
         print(f"Computed threshold: {threshold}")
         print(f"HOG mean: {np.mean(hog_features)}")
-        print(f"HOG values above threshold: {np.sum(hog_features> threshold)}/{len(hog_features)}")
+        print(f"HOG values above threshold: {np.sum(hog_features > threshold)}/{len(hog_features)}")
     
     return threshold
 
@@ -46,7 +46,7 @@ def identify_POI(hog_features, threshold, debug=False):
     Identify Points of Interest (POIs) and subsample more aggressively.
     Modification: Take every 10th POI instead of every 2nd to reduce the count.
     """
-    poi_indices = np.where(hog_features> threshold)[0]
+    poi_indices = np.where(hog_features > threshold)[0]
     selected_indices = poi_indices[::10]  # More aggressive subsampling
     
     if debug:
@@ -56,7 +56,7 @@ def identify_POI(hog_features, threshold, debug=False):
     
     return selected_indices
 
-def embed_bits(pixel1, pixel2, bits_to_embed, debug=False):
+'''def embed_bits(pixel1, pixel2, bits_to_embed, debug=False):
     """
     Embed bits into pixel pairs (unchanged).
     """
@@ -69,7 +69,7 @@ def embed_bits(pixel1, pixel2, bits_to_embed, debug=False):
     bits_embedded = 0
     
     for channel in range(3):
-        if bits_embedded<len(bits_to_embed):
+        if bits_embedded < len(bits_to_embed):
             new_pixel1[channel] = (pixel1[channel] & 0xFE) | int(bits_to_embed[bits_embedded])
             bits_embedded += 1
             
@@ -77,7 +77,7 @@ def embed_bits(pixel1, pixel2, bits_to_embed, debug=False):
                 print(f"Embed in P1[{channel}]: {bits_to_embed[bits_embedded-1]}, " 
                       f"Before: {pixel1[channel]}, After: {new_pixel1[channel]}")
         
-        if bits_embedded<len(bits_to_embed):
+        if bits_embedded < len(bits_to_embed):
             new_pixel2[channel] = (pixel2[channel] & 0xFE) | int(bits_to_embed[bits_embedded])
             bits_embedded += 1
             
@@ -107,6 +107,7 @@ def extract_bits(pixel1, pixel2, debug=False):
             print(f"Extract from P2[{channel}]: {bit2}")
     
     return extracted
+    '''
 
 from adpvd import encode_image_adpvd as encode_image
 from adpvd import decode_image_adpvd as decode_image
